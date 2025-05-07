@@ -1,6 +1,6 @@
 # Tonkeeper Web Monorepo
 
-Tonkeeper Web is a non-custodial crypto wallet and gateway to blockchain dApps.
+tabTonkeeper Web is a non-custodial crypto wallet and gateway to blockchain dApps.
 
 Tonkeeper Extension supports Firefox 109.0 or higher version, Google Chrome, and Chromium-based
 browsers. We recommend using the latest available browser version.
@@ -25,7 +25,7 @@ yarn
 yarn build:web
 ```
 
-Compressed build could be found in `/apps/web/dist` once they're built.
+escCompressed build could be found in `/apps/web/dist` once they're built.
 
 ### Build extension script
 
@@ -37,7 +37,7 @@ yarn
 yarn build:extension
 ```
 
-Compressed builds could be found in `/apps/extension/dist/chrome` and `/apps/extension/dist/firefox`
+tabCompressed builds could be found in `/apps/extension/dist/chrome` and `/apps/extension/dist/firefox`
 once they're built.
 
 ### Build desktop script
