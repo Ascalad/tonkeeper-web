@@ -6,6 +6,7 @@ import { notNullish } from '../utils/types';
 import { Configuration, DefaultApi } from '../batteryApi';
 import { TronTransactionFee } from '../entries/crypto/transaction-fee';
 import { cachedAsync, withRetry } from '../utils/common';
+import { TronApiHttpError } from '../errors/TronApiHttpError';
 import type { SignedTransaction } from 'tronweb/src/types/Transaction';
 
 const removeTrailingSlash = (str: string) => str.replace(/\/$/, '');
@@ -53,14 +54,35 @@ export type EstimateResourcesRequest = {
     data: string;
 };
 
-const maxRetries = 5;
-
 const defaultRetryConfig = {
-    maxRetries: maxRetries,
-    delayMs: 3000
+    maxRetries: 2,
+    delayMs: 1000,
+    shouldRetry: (error: unknown) => error instanceof TronApiHttpError && error.isRateLimit
 };
 
 const defaultCacheTime = 5000;
+
+async function tronFetch(url: string | URL, init?: RequestInit): Promise<Response> {
+    let response: Response;
+    try {
+        response = await fetch(url, init);
+    } catch (e) {
+        if (e instanceof TypeError) {
+            throw new TronApiHttpError(0, e.message);
+        }
+        throw e;
+    }
+
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new TronApiHttpError(
+            response.status,
+            body ? `TronGrid HTTP error ${response.status}: ${body.slice(0, 200)}` : undefined
+        );
+    }
+
+    return response;
+}
 
 function decorateApi<TArgs extends unknown[], TResult>(
     fn: (...args: TArgs) => Promise<TResult>,
@@ -99,11 +121,11 @@ export class TronApi {
     }
 
     public getBalances = decorateApi(async (address: string) => {
-        const res = await (
-            await fetch(`${this.tronGridBaseUrl}/v1/accounts/${address}`, {
-                headers: this.headers
-            })
-        ).json();
+        const httpRes = await tronFetch(`${this.tronGridBaseUrl}/v1/accounts/${address}`, {
+            headers: this.headers
+        });
+
+        const res = await httpRes.json();
 
         if (!res?.success || !res?.data) {
             throw new Error('Fetch tron balances failed');
@@ -149,36 +171,39 @@ export class TronApi {
         };
     });
 
-    public getAccountBandwidth = decorateApi(async (address: string): Promise<number> => {
-        const res = await (
-            await fetch(`${this.tronGridBaseUrl}/wallet/getaccountnet`, {
+    public getAccountBandwidth = decorateApi(
+        async (address: string): Promise<number> => {
+            const httpRes = await tronFetch(`${this.tronGridBaseUrl}/wallet/getaccountnet`, {
                 headers: this.headers,
                 method: 'post',
                 body: JSON.stringify({
                     address,
                     visible: true
                 })
-            })
-        ).json();
+            });
+            const res = await httpRes.json();
 
-        if (!res.freeNetLimit) {
-            return 0;
-        }
+            if (!res.freeNetLimit) {
+                return 0;
+            }
 
-        const freeNetLimit = Number(res.freeNetLimit);
-        const freeNetUsed = Number(res.freeNetUsed ?? 0);
-        if (!isFinite(freeNetLimit) || !isFinite(freeNetUsed)) {
-            return 0;
-        }
+            const freeNetLimit = Number(res.freeNetLimit);
+            const freeNetUsed = Number(res.freeNetUsed ?? 0);
+            if (!isFinite(freeNetLimit) || !isFinite(freeNetUsed)) {
+                return 0;
+            }
 
-        return Math.max(0, freeNetLimit - freeNetUsed);
-    });
+            return Math.max(0, freeNetLimit - freeNetUsed);
+        },
+        { cacheTime: 60_000 }
+    );
 
     public estimateResources = decorateApi(
         async (params: EstimateResourcesRequest): Promise<TronResources> => {
             try {
-                const response = await (
-                    await fetch(`${this.tronGridBaseUrl}/wallet/triggerconstantcontract`, {
+                const httpRes = await tronFetch(
+                    `${this.tronGridBaseUrl}/wallet/triggerconstantcontract`,
+                    {
                         method: 'POST',
                         headers: this.headers,
                         body: JSON.stringify({
@@ -188,8 +213,9 @@ export class TronApi {
                             parameter: params.data,
                             visible: true
                         })
-                    })
-                ).json();
+                    }
+                );
+                const response = await httpRes.json();
 
                 if (response.result.result !== true) {
                     throw new Error('Estimating energy error');
@@ -215,7 +241,8 @@ export class TronApi {
                 console.error('Error estimating energy:', error);
                 throw error;
             }
-        }
+        },
+        { cacheTime: 60_000 }
     );
 
     public estimateBandwidth(transactionRawDataHex: string) {
@@ -236,12 +263,11 @@ export class TronApi {
 
     public broadcastSignedTransaction = decorateApi(
         async (signedTx: SignedTransaction) => {
-            const res = await fetch(`${this.tronGridBaseUrl}/wallet/broadcasttransaction`, {
+            const res = await tronFetch(`${this.tronGridBaseUrl}/wallet/broadcasttransaction`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(signedTx)
             });
-
             const json = await res.json();
 
             if (!json.result) {
@@ -249,16 +275,15 @@ export class TronApi {
                 throw new Error(json.message || 'Broadcast failed');
             }
         },
-        { cacheTime: 0, maxRetries: 3 }
+        { cacheTime: 0, maxRetries: 3, shouldRetry: () => true }
     );
 
     public getResourcePrices = decorateApi(
         async (): Promise<TronResourcePrices> => {
-            const res = await fetch(`${this.tronGridBaseUrl}/wallet/getchainparameters`, {
+            const res = await tronFetch(`${this.tronGridBaseUrl}/wallet/getchainparameters`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
-
             const data = await res.json();
             const params: { key: string; value: string | number }[] = Array.isArray(
                 data.chainParameter
@@ -349,12 +374,11 @@ export class TronApi {
                 url.searchParams.set('only_from', 'true');
             }
 
-            const response = await (
-                await fetch(url, {
-                    method: 'GET',
-                    headers: this.headers
-                })
-            ).json();
+            const httpRes = await tronFetch(url, {
+                method: 'GET',
+                headers: this.headers
+            });
+            const response = await httpRes.json();
 
             if (!response?.success || !response?.data || !Array.isArray(response.data)) {
                 throw new Error('Error fetching transfers history');

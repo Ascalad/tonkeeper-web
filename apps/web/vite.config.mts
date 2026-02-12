@@ -17,6 +17,9 @@ export default defineConfig({
         react(),
         injectCSP(metaTagCspConfig)
     ],
+    server: {
+        allowedHosts: ['wallet.tonkeeper.com'],
+    },
     resolve: {
         alias: {
             react: path.resolve(__dirname, './node_modules/react'),

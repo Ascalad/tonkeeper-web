@@ -110,10 +110,10 @@ export function useEstimateTransfer({
             }
         },
         {
-            refetchInterval: DefaultRefetchInterval,
+            refetchInterval: isTronAsset(amount.asset) ? false : DefaultRefetchInterval,
             refetchOnMount: 'always',
             enabled: !!getSender && senderType !== undefined,
-            retry: 2
+            retry: isTronAsset(amount.asset) ? false : 2
         }
     );
 }

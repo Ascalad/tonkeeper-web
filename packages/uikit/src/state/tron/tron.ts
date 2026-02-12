@@ -156,7 +156,8 @@ export const useTronBalances = () => {
             refetchInterval: DefaultRefetchInterval,
             refetchIntervalInBackground: true,
             refetchOnWindowFocus: true,
-            keepPreviousData: true
+            keepPreviousData: true,
+            retry: false
         }
     );
 };
@@ -215,11 +216,14 @@ export const useTrc20FreeTransfersConfig = () => {
 const useTrc20TrxDefaultFee = () => {
     const tronApi = useTronApi();
 
-    return useQuery([QueryKey.trc20TrxDefaultFee], () =>
-        TronTrxSender.getBurnTrxAmountForResources(
-            tronApi,
-            TronTrc20Encoder.transferDefaultResources
-        )
+    return useQuery(
+        [QueryKey.trc20TrxDefaultFee],
+        () =>
+            TronTrxSender.getBurnTrxAmountForResources(
+                tronApi,
+                TronTrc20Encoder.transferDefaultResources
+            ),
+        { retry: false }
     );
 };
 
