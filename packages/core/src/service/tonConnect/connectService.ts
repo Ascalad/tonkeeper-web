@@ -431,8 +431,8 @@ export const createTonProofItem = (
             value: proof.domainBuffer.toString('utf8') // app domain name (as url part, without encoding)
         },
         signature: Buffer.from(signature).toString('base64'), // base64-encoded signature
-        payload: proof.payload, // payload from the request,
-        stateInit: stateInit // state init for a wallet
+        payload: proof.payload, // payload from the request
+        ...(stateInit !== undefined && { stateInit }) // state init for a wallet (only if defined)
     };
 };
 
