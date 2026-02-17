@@ -4,7 +4,7 @@ import './i18n';
 
 import './telegram-widget';
 import { AppTgOauthRedirect, isInTgAuthInjectionContext } from "./AppTgOauthRedirect";
-import { getTgAuthResult } from "@tonkeeper/core/dist/service/telegramOauth";
+import { getTgAuthResult, sendTgAuthResultToOpener } from "@tonkeeper/core/dist/service/telegramOauth";
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
@@ -16,7 +16,7 @@ try {
   if (tgAuthResult) {
     if (isInTgAuthInjectionContext()) {
       EntryPoint = <AppTgOauthRedirect tgAuthResult={tgAuthResult} />;
-    } else {
+    } else if (!sendTgAuthResultToOpener(tgAuthResult)) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }

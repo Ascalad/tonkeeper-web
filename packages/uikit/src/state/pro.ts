@@ -393,7 +393,12 @@ export const useActivateTrialMutation = () => {
             throw new Error('Pro trial tg bot id is not set');
         }
 
-        const token = await startProServiceTrial(config.pro_trial_tg_bot_id, language);
+        const authToken = await sdk.subscriptionService.getToken();
+        if (!authToken) {
+            throw new Error('Auth token is required for trial activation');
+        }
+
+        const token = await startProServiceTrial(config.pro_trial_tg_bot_id, authToken, language);
 
         await sdk.subscriptionService.activateTrial(token);
         await client.invalidateQueries([QueryKey.pro]);

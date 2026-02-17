@@ -1,6 +1,7 @@
 import { Address, beginCell, storeStateInit } from '@ton/core';
 import { getSecureRandomBytes, keyPairFromSeed, sha256_sync } from '@ton/crypto';
 import queryString from 'query-string';
+import { TargetEnv } from '../../AppSdk';
 import { IStorage } from '../../Storage';
 import { TonConnectError } from '../../entries/exception';
 import { Network } from '../../entries/network';
@@ -159,7 +160,7 @@ export const getManifest = async (request: ConnectRequest) => {
     return manifest;
 };
 
-export function getBrowserPlatform(): DeviceInfo['platform'] {
+function getBrowserPlatform(): DeviceInfo['platform'] {
     const platform =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window?.navigator as any)?.userAgentData?.platform || window?.navigator.platform;
@@ -188,6 +189,13 @@ export function getBrowserPlatform(): DeviceInfo['platform'] {
     }
 
     return os!;
+}
+
+export function getTonConnectPlatform(targetEnv: TargetEnv): DeviceInfo['platform'] {
+    if (targetEnv === 'extension') {
+        return 'browser';
+    }
+    return getBrowserPlatform();
 }
 
 export const getDeviceInfo = (
@@ -431,8 +439,8 @@ export const createTonProofItem = (
             value: proof.domainBuffer.toString('utf8') // app domain name (as url part, without encoding)
         },
         signature: Buffer.from(signature).toString('base64'), // base64-encoded signature
-        payload: proof.payload, // payload from the request,
-        stateInit: stateInit // state init for a wallet
+        payload: proof.payload, // payload from the request
+        ...(stateInit !== undefined && { stateInit }) // state init for a wallet (only if defined)
     };
 };
 

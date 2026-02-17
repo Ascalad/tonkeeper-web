@@ -18,7 +18,9 @@ export default defineConfig({
         injectCSP(metaTagCspConfig)
     ],
     server: {
-        allowedHosts: ['wallet.tonkeeper.com'],
+        // Required for local development to test Telegram OAuth callbacks.
+        // Vite rejects requests with Host header different from localhost by default.
+        allowedHosts: ['wallet.tonkeeper.com']
     },
     resolve: {
         alias: {

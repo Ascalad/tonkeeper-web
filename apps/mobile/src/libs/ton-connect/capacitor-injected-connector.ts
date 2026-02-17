@@ -28,9 +28,9 @@ import { capacitorStorage } from '../appSdk';
 import {
     checkTonConnectFromAndNetwork,
     disconnectResponse,
-    getBrowserPlatform,
     getDeviceInfo,
     getInjectedDappConnection,
+    getTonConnectPlatform,
     tonConnectTonkeeperProAppName,
     tonInjectedReConnectRequest
 } from '@tonkeeper/core/dist/service/tonConnect/connectService';
@@ -153,7 +153,7 @@ class CapacitorTonConnectInjectedConnector {
                         payload: {
                             items,
                             device: getDeviceInfo(
-                                getBrowserPlatform(),
+                                getTonConnectPlatform('mobile'),
                                 packageJson.version,
                                 maxMessages,
                                 tonConnectTonkeeperProAppName

@@ -49,7 +49,8 @@ apps.forEach(app => {
     if (
         app === 'desktop' ||
         app === 'extension' ||
-        app === 'web'
+        app === 'web' ||
+        app === 'mobile'
     ) {
         updatePackageVersion(path.join(appsDir, app));
     } else {

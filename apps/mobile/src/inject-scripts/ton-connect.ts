@@ -9,8 +9,8 @@ import type {
     WalletResponse
 } from '@tonkeeper/core/dist/entries/tonConnect';
 import {
-    getBrowserPlatform,
     getDeviceInfo,
+    getTonConnectPlatform,
     tonConnectTonkeeperProAppName,
     tonConnectTonkeeperProWalletInfo
 } from '@tonkeeper/core/dist/service/tonConnect/connectService';
@@ -20,7 +20,7 @@ import { NATIVE_BRIDGE_METHODS } from './native-bridge-methods';
 
 function currentDeviceInfo(options?: { maxMessages?: number }): DeviceInfo {
     return getDeviceInfo(
-        getBrowserPlatform(),
+        getTonConnectPlatform('mobile'),
         packageJson.version,
         options?.maxMessages ?? 255,
         tonConnectTonkeeperProAppName
