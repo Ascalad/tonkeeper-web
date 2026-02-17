@@ -26,15 +26,15 @@ jobs:
                       command: make:intel
                       tag: x64
                       dist: /apps/desktop/out/make/squirrel.windows/x64/*Setup.exe
-                    - os: macos-13
+                    - os: macos-15-intel
                       command: make:intel
                       tag: x64
                       dist: /apps/desktop/out/make
-                    - os: macos-13
+                    - os: macos-latest
                       command: make:arm
                       tag: arm
                       dist: /apps/desktop/out/make
-                    - os: macos-13
+                    - os: macos-latest
                       command: make:universal
                       tag: universal
                       dist: /apps/desktop/out/make

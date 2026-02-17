@@ -208,14 +208,18 @@ export const saveIapPurchase = async (
     }
 };
 
-export async function startProServiceTrial(botId: string, lang?: string): Promise<string> {
+export async function startProServiceTrial(
+    botId: string,
+    token: string,
+    lang?: string
+): Promise<string> {
     const tgData = await loginViaTG(botId, lang);
 
     if (!tgData) {
         throw new Error('Unable to activate Trial');
     }
 
-    const result = await TiersService.activateTrial(tgData);
+    const result = await TiersService.activateTrial(`Bearer ${token}`, tgData);
 
     if (!result.ok || !result.auth_token) {
         throw new Error('Unable to activate Trial');

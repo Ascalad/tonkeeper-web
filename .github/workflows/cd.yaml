@@ -21,11 +21,11 @@ jobs:
                       command: publish:arm
                     - os: windows-latest
                       command: publish:intel
-                    - os: macos-13
+                    - os: macos-15-intel
                       command: publish:intel
-                    - os: macos-13
+                    - os: macos-latest
                       command: publish:arm
-                    - os: macos-13
+                    - os: macos-latest
                       command: publish:universal
 
         runs-on: ${{ matrix.os }}

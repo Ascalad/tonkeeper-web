@@ -38,11 +38,13 @@ export class TiersService {
     }
     /**
      * Activate Pro trial subscription
+     * @param authorization
      * @param requestBody Data that is expected
      * @returns Ok Ok
      * @throws ApiError
      */
     public static activateTrial(
+        authorization: string,
         requestBody?: {
             id: number;
             first_name?: string;
@@ -56,6 +58,9 @@ export class TiersService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/services/pro/trial',
+            headers: {
+                'Authorization': authorization,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

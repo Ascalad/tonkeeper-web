@@ -562,7 +562,7 @@
         xhr.onerror = function() {
           callback('*', false);
         };
-/*PATCHED*/ xhr.withCredentials = false;
+/*PATCHED*/ xhr.withCredentials = false; // Electron manages cookies via onBeforeSendHeaders in mainWindow.ts
         xhr.send('bot_id=' + encodeURIComponent(options.bot_id) + (options.lang ? '&lang=' + encodeURIComponent(options.lang) : ''));
       }
     };
