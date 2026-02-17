@@ -1,12 +1,15 @@
 import {
     Trc20FreeTransfersConfig,
     useTrc20FreeTransfersConfig,
-    useTronApi
+    useTrc20TransferDefaultFees,
+    useTronApi,
+    useTronBalances
 } from '../../../state/tron/tron';
-import { useActiveAccount, useActiveApi } from '../../../state/wallet';
+import { useActiveAccount, useActiveApi, useTonBalance } from '../../../state/wallet';
 import {
     useBatteryApi,
     useBatteryAuthToken,
+    useBatteryBalance,
     useBatteryUnitTonRate,
     useRequestBatteryAuthToken
 } from '../../../state/battery';
@@ -18,20 +21,15 @@ import { getMultiPayloadSigner, getTronSigner } from '../../../state/mnemonic';
 import { TronBatterySender } from '@tonkeeper/core/dist/service/tron-blockchain/sender/tron-battery-sender';
 import { TronTrxSender } from '@tonkeeper/core/dist/service/tron-blockchain/sender/tron-trx-sender';
 import { TronTonSender } from '@tonkeeper/core/dist/service/tron-blockchain/sender/tron-ton-sender';
-import { assertUnreachable, notNullish } from '@tonkeeper/core/dist/utils/types';
+import { assertUnreachable } from '@tonkeeper/core/dist/utils/types';
 import { AssetAmount } from '@tonkeeper/core/dist/entries/crypto/asset/asset-amount';
-import { useQuery } from '@tanstack/react-query';
-import { useToQueryKeyPart } from '../../useToQueryKeyPart';
 import { isTronAsset } from '@tonkeeper/core/dist/entries/crypto/asset/asset';
-import { TronAsset } from '@tonkeeper/core/dist/entries/crypto/asset/tron-asset';
 import {
     TransactionFeeBattery,
     TransactionFeeFreeTransfer,
     TransactionFeeTonAssetRelayed,
     TransactionFeeTronAsset
 } from '@tonkeeper/core/dist/entries/crypto/transaction-fee';
-import { TronNotEnoughBalanceEstimationError } from '@tonkeeper/core/dist/errors/TronNotEnoughBalanceEstimationError';
-import { pTimeout } from '@tonkeeper/core/dist/utils/common';
 import { useProAuthToken } from '../../../state/pro';
 import { TronFreeProSender } from '@tonkeeper/core/dist/service/tron-blockchain/sender/tron-free-pro-sender';
 import { FLAGGED_FEATURE, useIsFeatureEnabled } from '../../../state/tonendpoint';
@@ -64,131 +62,102 @@ export type TronSenderOption =
           fee: TransactionFeeFreeTransfer;
       };
 
-const preEstimationTimeoutMS = 8000;
-
-export const useAvailableTronSendersChoices = (receiver: string, assetAmount: AssetAmount) => {
-    const batteryTronSender = useTronEstimationBatterySender();
-    const tronTrxSender = useTronEstimationTrxSender();
-    const tronTonSender = useTronEstimationTonSender();
+export const useAvailableTronSendersChoices = (
+    _receiver: string,
+    assetAmount: AssetAmount
+): { data: TronSenderOption[] | undefined } => {
+    const { batterySenderFee, tonSenderFee, trxSenderFee } = useTrc20TransferDefaultFees();
     const { data: freeTrc20Config } = useTrc20FreeTransfersConfig();
-
-    const queryKeyBattery = useToQueryKeyPart(batteryTronSender);
-    const queryKeyTrx = useToQueryKeyPart(tronTrxSender);
-    const queryKeyTon = useToQueryKeyPart(tronTonSender);
+    const { data: batteryBalance } = useBatteryBalance();
+    const { data: tonBalance } = useTonBalance();
+    const { data: tronBalances } = useTronBalances();
+    const { data: batteryAuthToken } = useBatteryAuthToken();
+    const activeAccount = useActiveAccount();
     const isTronEnabled = useIsFeatureEnabled(FLAGGED_FEATURE.TRON);
 
-    return useQuery<TronSenderOption[]>(
-        [
-            'tron-available-senders',
-            queryKeyBattery,
-            queryKeyTrx,
-            queryKeyTon,
-            freeTrc20Config,
-            receiver,
-            assetAmount,
-            isTronEnabled
-        ],
-        async () => {
-            if (!isTronAsset(assetAmount.asset)) {
-                return [];
-            }
-            const optionsGetters: (() => Promise<TronSenderOption | undefined>)[] = [];
+    const activeTronWallet = isAccountTronCompatible(activeAccount)
+        ? activeAccount.activeTronWallet
+        : undefined;
+    const activeTonWallet = isStandardTonWallet(activeAccount.activeTonWallet)
+        ? activeAccount.activeTonWallet
+        : undefined;
 
-            if (freeTrc20Config && isTronEnabled) {
-                optionsGetters.push(async () => ({
-                    type: TRON_SENDER_TYPE.FREE_PRO,
-                    isEnoughBalance:
-                        freeTrc20Config.type === 'active' &&
-                        freeTrc20Config.availableTransfersNumber > 0,
-                    config: freeTrc20Config,
-                    fee: { type: 'free-transfer' }
-                }));
-            }
+    const isReady = trxSenderFee.trx !== undefined || freeTrc20Config !== undefined;
 
-            if (batteryTronSender) {
-                optionsGetters.push(async () => {
-                    try {
-                        const { fee } = await pTimeout(
-                            batteryTronSender.estimate(
-                                receiver,
-                                assetAmount as AssetAmount<TronAsset>
-                            ),
-                            preEstimationTimeoutMS
-                        );
-                        return {
-                            type: TRON_SENDER_TYPE.BATTERY,
-                            isEnoughBalance: true,
-                            fee
-                        };
-                    } catch (e: unknown) {
-                        if (
-                            e instanceof TronNotEnoughBalanceEstimationError &&
-                            e.fee &&
-                            isTronEnabled
-                        ) {
-                            return {
-                                type: TRON_SENDER_TYPE.BATTERY,
-                                isEnoughBalance: false,
-                                fee: e.fee as TransactionFeeBattery
-                            };
-                        }
-                        console.debug(e);
-                    }
-                });
-            }
-
-            if (tronTonSender && isTronEnabled) {
-                optionsGetters.push(async () => {
-                    try {
-                        const { fee } = await pTimeout(
-                            tronTonSender.estimate(receiver, assetAmount as AssetAmount<TronAsset>),
-                            preEstimationTimeoutMS
-                        );
-                        return {
-                            type: TRON_SENDER_TYPE.TON_ASSET,
-                            isEnoughBalance: true,
-                            fee
-                        };
-                    } catch (e) {
-                        if (e instanceof TronNotEnoughBalanceEstimationError && e.fee) {
-                            return {
-                                type: TRON_SENDER_TYPE.TON_ASSET,
-                                isEnoughBalance: false,
-                                fee: e.fee as TransactionFeeTonAssetRelayed
-                            };
-                        }
-                        console.debug(e);
-                    }
-                });
-            }
-
-            if (tronTrxSender) {
-                optionsGetters.push(async () => {
-                    try {
-                        const { fee } = await pTimeout(
-                            tronTrxSender.estimate(receiver, assetAmount as AssetAmount<TronAsset>),
-                            preEstimationTimeoutMS
-                        );
-                        return { type: TRON_SENDER_TYPE.TRX, isEnoughBalance: true, fee };
-                    } catch (e) {
-                        if (e instanceof TronNotEnoughBalanceEstimationError && e.fee) {
-                            return {
-                                type: TRON_SENDER_TYPE.TRX,
-                                isEnoughBalance: false,
-                                fee: e.fee as TransactionFeeTronAsset
-                            };
-                        }
-                        console.debug(e);
-                    }
-                });
-            }
-
-            return (await Promise.all(optionsGetters.map(o => o()))).filter(notNullish);
-        },
-        {
-            enabled: !!tronTrxSender || !!tronTonSender
+    const data = useMemo(() => {
+        if (!isTronAsset(assetAmount.asset)) {
+            return [];
         }
-    );
+
+        const options: TronSenderOption[] = [];
+
+        // FreePro
+        if (freeTrc20Config && isTronEnabled) {
+            options.push({
+                type: TRON_SENDER_TYPE.FREE_PRO,
+                isEnoughBalance:
+                    freeTrc20Config.type === 'active' &&
+                    freeTrc20Config.availableTransfersNumber > 0,
+                config: freeTrc20Config,
+                fee: { type: 'free-transfer' }
+            });
+        }
+
+        // Battery
+        if (batteryAuthToken && isTronEnabled && batterySenderFee.charges != null) {
+            options.push({
+                type: TRON_SENDER_TYPE.BATTERY,
+                isEnoughBalance: batteryBalance
+                    ? batteryBalance.batteryUnitsBalance.gte(batterySenderFee.charges)
+                    : false,
+                fee: { type: 'battery', charges: batterySenderFee.charges }
+            });
+        }
+
+        // TON Asset
+        if (activeTonWallet && isTronEnabled && !tonSenderFee.ton.weiAmount.isZero()) {
+            options.push({
+                type: TRON_SENDER_TYPE.TON_ASSET,
+                isEnoughBalance: tonBalance
+                    ? tonBalance.weiAmount.gte(tonSenderFee.ton.weiAmount)
+                    : false,
+                fee: {
+                    type: 'ton-asset-relayed',
+                    extra: tonSenderFee.ton,
+                    sendToAddress: '' // Placeholder; real address comes from estimation in useEstimateTransfer
+                }
+            });
+        }
+
+        // TRX
+        if (activeTronWallet && trxSenderFee.trx) {
+            options.push({
+                type: TRON_SENDER_TYPE.TRX,
+                isEnoughBalance:
+                    tronBalances?.trx != null && !trxSenderFee.trx.weiAmount.isZero()
+                        ? tronBalances.trx.weiAmount.gte(trxSenderFee.trx.weiAmount)
+                        : false,
+                fee: { type: 'tron-asset', extra: trxSenderFee.trx }
+            });
+        }
+
+        return options;
+    }, [
+        assetAmount.asset,
+        freeTrc20Config,
+        isTronEnabled,
+        batteryAuthToken,
+        batterySenderFee.charges,
+        batteryBalance,
+        activeTonWallet,
+        tonBalance,
+        tonSenderFee.ton,
+        activeTronWallet,
+        trxSenderFee.trx,
+        tronBalances
+    ]);
+
+    return { data: isReady ? data : undefined };
 };
 
 export const useGetTronSender = () => {

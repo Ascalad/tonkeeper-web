@@ -218,6 +218,9 @@ export const useFetchFilteredActivity = (assetAddress?: string) => {
                           onlyInitiator,
                           filterSpam,
                           batteryAuthToken: batteryAuthToken ?? undefined
+                      }).catch(e => {
+                          console.error('Tron activity fetch failed:', e);
+                          return emptyResult;
                       })
             ]);
 
