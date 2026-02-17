@@ -16,6 +16,7 @@ import {
 import { TonProvider } from '../provider/index';
 import {
     getDeviceInfo,
+    getTonConnectPlatform,
     tonConnectTonkeeperAppName,
     tonConnectTonkeeperWalletInfo
 } from '@tonkeeper/core/dist/service/tonConnect/connectService';
@@ -40,7 +41,12 @@ export class ExtensionTonConnectInjectedBridge implements ITonConnectInjectedBri
 
     walletInfo = tonConnectTonkeeperWalletInfo;
 
-    deviceInfo = getDeviceInfo('browser', packageJson.version, 255, tonConnectTonkeeperAppName);
+    deviceInfo = getDeviceInfo(
+        getTonConnectPlatform('extension'),
+        packageJson.version,
+        255,
+        tonConnectTonkeeperAppName
+    );
 
     protocolVersion = tonConnectProtocolVersion;
 

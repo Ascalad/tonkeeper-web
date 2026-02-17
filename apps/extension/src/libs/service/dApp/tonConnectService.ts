@@ -13,6 +13,7 @@ import {
     checkTonConnectFromAndNetwork,
     getDeviceInfo,
     getInjectedDappConnection,
+    getTonConnectPlatform,
     tonConnectTonkeeperAppName,
     tonInjectedDisconnectRequest,
     tonInjectedReConnectRequest
@@ -29,43 +30,19 @@ import { showNotificationInPopup } from '../backgroundPopUpService';
 
 const storage = new ExtensionStorage();
 
-const getTonConnectPlatform = (os: browser.Runtime.PlatformOs): DeviceInfo['platform'] => {
-    switch (os) {
-        case 'mac': {
-            return 'mac';
-        }
-        case 'win': {
-            return 'windows';
-        }
-        case 'android': {
-            return 'android';
-        }
-        case 'cros':
-        case 'linux':
-        case 'openbsd': {
-            return 'linux';
-        }
-        default:
-            return '' as unknown as DeviceInfo['platform'];
-    }
-};
-
 const tonReConnectResponse = async (origin: string): Promise<TonConnectEventPayload> => {
     const { items, maxMessages } = await tonInjectedReConnectRequest(storage, origin);
 
     return {
         items,
-        device: await getExtensionDeviceInfo({ maxMessages })
+        device: getExtensionDeviceInfo({ maxMessages })
     };
 };
 
-export async function getExtensionDeviceInfo(options?: {
-    maxMessages?: number;
-}): Promise<DeviceInfo> {
+export function getExtensionDeviceInfo(options?: { maxMessages?: number }): DeviceInfo {
     const { version } = browser.runtime.getManifest();
-    const { os } = await browser.runtime.getPlatformInfo();
     return getDeviceInfo(
-        getTonConnectPlatform(os),
+        getTonConnectPlatform('extension'),
         version,
         options?.maxMessages ?? 255,
         tonConnectTonkeeperAppName
