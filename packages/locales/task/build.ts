@@ -33,7 +33,9 @@ const unzip = (zipFile: string) => {
 };
 
 const loadTransactions = async () => {
-    if (process.env.TOLGEE_TOKEN == undefined) return;
+    if (process.env.TOLGEE_TOKEN === undefined) return;
+    // eslint-disable-next-line no-console
+    console.log('TOLGEE_TOKEN is set');
 
     if (fs.existsSync(src)) {
         fs.rmSync(src, { recursive: true, force: true });
