@@ -84,7 +84,7 @@ export async function parseTonTransaction(
         api: APIConfig;
         walletAddress: string;
         batteryResponse: string;
-        gaslessResponse: string;
+        gaslessResponse?: string;
     }
 ): Promise<
     | {
@@ -185,15 +185,25 @@ export async function parseTonTransaction(
                             { api, walletAddress }
                         )
                     },
-                    [TON_CONNECT_MSG_VARIANTS_ID.GASLESS]: {
-                        messages: await encodeJettonMessage(
-                            { to, value, payload, jetton, responseAddress: gaslessResponse },
-                            { api, walletAddress }
-                        ),
-                        options: {
-                            asset: jetton
-                        }
-                    }
+                    ...(gaslessResponse
+                        ? {
+                              [TON_CONNECT_MSG_VARIANTS_ID.GASLESS]: {
+                                  messages: await encodeJettonMessage(
+                                      {
+                                          to,
+                                          value,
+                                          payload,
+                                          jetton,
+                                          responseAddress: gaslessResponse
+                                      },
+                                      { api, walletAddress }
+                                  ),
+                                  options: {
+                                      asset: jetton
+                                  }
+                              }
+                          }
+                        : {})
                 }
             } satisfies TonConnectTransactionPayload;
             return {

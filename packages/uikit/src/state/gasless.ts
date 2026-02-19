@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { QueryKey } from '../libs/queryKey';
 import { GaslessApi } from '@tonkeeper/core/dist/tonApiV2';
 import { useMemo } from 'react';
-import { useActiveApi } from './wallet';
+import { useActiveApi, useActiveTonNetwork } from './wallet';
+import { Network } from '@tonkeeper/core/dist/entries/network';
 import { ServerConfig } from './tonendpoint';
 import { useAppContext } from '../hooks/appContext';
 
@@ -20,19 +21,18 @@ export const useGaslessConfigQuery = (mainnetConfig?: ServerConfig['mainnetConfi
         },
         {
             keepPreviousData: true,
-            suspense: true,
-            enabled: Boolean(mainnetConfig)
+            enabled: Boolean(mainnetConfig),
+            retry: false
         }
     );
 };
 
 export const useGaslessConfig = () => {
     const { mainnetConfig } = useAppContext();
-    const { data } = useGaslessConfigQuery(mainnetConfig);
+    const network = useActiveTonNetwork();
+    const config = network === Network.TESTNET ? undefined : mainnetConfig;
+    const { data } = useGaslessConfigQuery(config);
 
-    if (!data) {
-        throw new Error('Gasless config not found');
-    }
-
+    if (network === Network.TESTNET) return undefined;
     return data;
 };
