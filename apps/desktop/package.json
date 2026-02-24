@@ -52,7 +52,7 @@
         "@vercel/webpack-asset-relocator-loader": "1.7.3",
         "css-loader": "^6.0.0",
         "dotenv": "^16.3.1",
-        "electron": "31.0.1",
+        "electron": "35.7.5",
         "electron-forge-maker-appimage": "25.0.5",
         "eslint": "^8.0.1",
         "eslint-plugin-import": "^2.25.0",
