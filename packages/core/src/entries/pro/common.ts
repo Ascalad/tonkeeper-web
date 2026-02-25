@@ -101,6 +101,7 @@ export interface ITokenizedWalletAuth extends IWalletAuth {
 
 export interface ITelegramAuth {
     type: AuthTypes.TELEGRAM;
+    wallet?: TonWalletStandard;
 }
 
 export interface ISupportData {

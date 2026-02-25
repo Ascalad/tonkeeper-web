@@ -4,9 +4,12 @@ import { isValidSubscription, ProSubscription } from '@tonkeeper/core/dist/entri
 
 import { Body2, Label2 } from '../Text';
 import { Button } from '../fields/Button';
+import { useProLogout } from '../../state/pro';
 import { handleSubmit } from '../../libs/form';
+import { ProActiveWallet } from './ProActiveWallet';
 import { ProStatusListItem } from './ProStatusListItem';
 import { useTranslation } from '../../hooks/translation';
+import { useNotifyError } from '../../hooks/useNotification';
 import { ListBlock, ListItem, ListItemPayload } from '../List';
 import { ProSubscriptionHeader } from './ProSubscriptionHeader';
 import { useDateTimeFormat } from '../../hooks/useDateTimeFormat';
@@ -23,17 +26,35 @@ export const TelegramStatusScreenState = ({ subscription }: IProps) => {
     const { onOpen: onProFeaturesOpen } = useProFeaturesNotification();
     const formatDate = useDateTimeFormat();
 
+    const {
+        mutateAsync: mutateProLogout,
+        isLoading: isLoggingOut,
+        isError: isLogoutError
+    } = useProLogout();
+    useNotifyError(isLogoutError && new Error(t('logout_failed')));
+
     if (!subscription) {
         return null;
     }
 
     const isProActive = isValidSubscription(subscription);
 
+    const handleDisconnect = async () => {
+        await mutateProLogout();
+        onProAuthOpen();
+    };
+
     return (
         <ProScreenContentWrapper onSubmit={handleSubmit(onProAuthOpen)}>
             <ProSubscriptionHeader
                 titleKey={isProActive ? 'tonkeeper_pro_is_active' : 'tonkeeper_pro_subscription'}
                 subtitleKey={isProActive ? 'subscription_is_linked' : 'pro_unlocks_premium_tools'}
+            />
+
+            <ProActiveWallet
+                isLoading={isLoggingOut}
+                onDisconnect={handleDisconnect}
+                isCurrentSubscription
             />
 
             <ListBlock margin={false} fullWidth>

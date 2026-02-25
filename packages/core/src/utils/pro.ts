@@ -53,15 +53,18 @@ export const normalizeSubscription = (
             throw new Error('Missing telegram dBStoredInfo');
         }
 
+        const telegramAuth: { type: AuthTypes.TELEGRAM; wallet?: TonWalletStandard } = {
+            type: AuthTypes.TELEGRAM,
+            ...(authorizedWallet ? { wallet: authorizedWallet } : {})
+        };
+
         if (valid) {
             return {
                 source,
                 status: TelegramSubscriptionStatuses.ACTIVE,
                 valid: true,
                 nextChargeDate,
-                auth: {
-                    type: AuthTypes.TELEGRAM
-                },
+                auth: telegramAuth,
                 expiresDate: toDate(dBStoredInfo.expires_date)
             };
         }
@@ -71,9 +74,7 @@ export const normalizeSubscription = (
             status: TelegramSubscriptionStatuses.EXPIRED,
             valid: false,
             nextChargeDate,
-            auth: {
-                type: AuthTypes.TELEGRAM
-            },
+            auth: telegramAuth,
             expiresDate: toDate(dBStoredInfo.expires_date)
         };
     }

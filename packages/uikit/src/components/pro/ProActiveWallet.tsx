@@ -46,11 +46,15 @@ export const ProActiveWallet: FC<IProps> = props => {
                 return currentAuth.wallet.rawAddress;
             }
 
+            if (currentAuth?.type === AuthTypes.TELEGRAM && currentAuth.wallet) {
+                return currentAuth.wallet.rawAddress;
+            }
+
             return undefined;
         })()
     );
 
-    if (isCurrentSubscription && isTelegramSubscription(subscription)) {
+    if (isCurrentSubscription && isTelegramSubscription(subscription) && !wallet) {
         return null;
     }
 
