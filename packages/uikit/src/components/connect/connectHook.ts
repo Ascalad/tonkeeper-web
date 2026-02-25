@@ -72,7 +72,7 @@ export const useProcessOpenedLink = (options?: {
                 api,
                 walletAddress,
                 batteryResponse: batteryConfig.excessAccount,
-                gaslessResponse: gaslessConfig.relayAddress
+                gaslessResponse: gaslessConfig?.relayAddress
             });
             if (transactionRequest) {
                 if (transactionRequest.type === 'complex') {

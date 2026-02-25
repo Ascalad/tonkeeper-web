@@ -228,7 +228,6 @@
   "select_wallet_for_authorization": "Select Wallet for authorization",
   "send_fee_estimation_error": "Failed to calculate fee",
   "send_publish_tx_error": "Failed to send transaction",
-  "trc20_transfer_unavailable": "Sending TRC20 is temporarily unavailable",
   "send_screen_steps": {
     "address": {
       "delete_alert_text": "Are you sure want to delete «{name}» from your favorites?",
@@ -369,6 +368,7 @@
   "transaction_type_subscription": "Subscribed",
   "transaction_type_unsubscription": "Unsubscribed",
   "transaction_type_wallet_initialized": "Wallet initialized",
+  "trc20_transfer_unavailable": "Sending TRC20 is temporarily unavailable",
   "txActions": {
     "amount": "Amount",
     "fee": "Fee",

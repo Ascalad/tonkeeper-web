@@ -228,7 +228,6 @@
   "select_wallet_for_authorization": "Выберите кошелёк для авторизации",
   "send_fee_estimation_error": "Ошибка подсчёта комиссии",
   "send_publish_tx_error": "Ошибка публикации транзакции",
-  "trc20_transfer_unavailable": "Отправка TRC20 временно недоступна",
   "send_screen_steps": {
     "address": {
       "delete_alert_text": "Вы точно хотите удалить «{name}» из избранного?",
@@ -369,6 +368,7 @@
   "transaction_type_subscription": "Подписка",
   "transaction_type_unsubscription": "Отмена подписки",
   "transaction_type_wallet_initialized": "Кошелёк инициализирован",
+  "trc20_transfer_unavailable": "Отправка TRC20 временно недоступна",
   "txActions": {
     "amount": "Сумма",
     "fee": "Комиссия",

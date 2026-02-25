@@ -82,7 +82,7 @@ export function useEncodeSwapToTonConnectParams(options: { forceCalculateBattery
                 );
             }
 
-            if (!isTon(swap.trade.from.asset.address)) {
+            if (!isTon(swap.trade.from.asset.address) && gaslessConfig) {
                 resultsPromises.push(
                     encodeAs('gasless', {
                         ...swap,

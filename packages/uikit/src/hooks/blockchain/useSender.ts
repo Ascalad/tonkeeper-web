@@ -210,8 +210,8 @@ export const useTonConnectAvailableSendersChoices = (payload: TonConnectTransact
             batteryConfig,
             twoFaConfig?.status,
             batteryUnitTonRate,
-            gaslessConfig.relayAddress,
-            gaslessConfig.gasJettons,
+            gaslessConfig?.relayAddress,
+            gaslessConfig?.gasJettons,
             jettons,
             isGaslessEnabled
         ],
@@ -267,6 +267,7 @@ export const useTonConnectAvailableSendersChoices = (payload: TonConnectTransact
             }
 
             if (
+                gaslessConfig &&
                 isGaslessEnabled &&
                 payload.messagesVariants?.gasless &&
                 isStandardTonWallet(account.activeTonWallet) &&
@@ -418,6 +419,7 @@ export const useGetEstimationSender = (senderChoice: SenderChoice = EXTERNAL_SEN
 
             if (senderChoice.type === 'gasless') {
                 if (
+                    !gaslessConfig ||
                     !isGaslessEnabled ||
                     !isGaslessAvailable({
                         asset: senderChoice.asset,
@@ -650,6 +652,7 @@ export const useGetSender = () => {
 
             if (senderChoice.type === 'gasless') {
                 if (
+                    !gaslessConfig ||
                     !isGaslessEnabled ||
                     !isGaslessAvailable({
                         asset: senderChoice.asset,
@@ -726,10 +729,13 @@ const isGaslessAvailable = ({
     account,
     asset
 }: {
-    gaslessConfig: GaslessConfig;
+    gaslessConfig: GaslessConfig | undefined;
     asset: TonAsset | undefined;
     account: Account;
 }) => {
+    if (!gaslessConfig) {
+        return false;
+    }
     return (
         asset &&
         gaslessConfig.gasJettons.some(j => j.masterId === tonAssetAddressToString(asset.address)) &&
